@@ -327,6 +327,9 @@ def test_theory_feature_improvement(data: pd.DataFrame, feature: str, **kwargs):
         spl = make_interp_spline(range(n_batches), accs_without, k=3)
         accs_without = spl(x_vals)
         sns.lineplot(x=x_vals, y=accs_without, color=RED, label='Without Feature')
+        # mark the actual measured points
+        sns.scatterplot(x=range(n_batches), y=accuracies_with_feature, color=BLUE, marker='^')
+        sns.scatterplot(x=range(n_batches), y=accuracies_without_feature, color=RED)
         plt.xlabel('Batch number')
         plt.ylabel('Accuracy')
         plt.legend()
@@ -352,7 +355,7 @@ def test_theory_feature_improvement(data: pd.DataFrame, feature: str, **kwargs):
     print(f"Normality test for '{feature}' (Shapiro-Wilk):")
     print(f"p-value: {p_shapiro:.5f}", end='')
 
-    if p_shapiro > ALPHA:
+    if p_shapiro > ALPHA:  # If the p-value is greater than 0.05 meaning the differences are normally distributed
         print(f" The differences are normally distributed for '{feature}'.")
 
         # Perform the paired t-test
@@ -385,7 +388,7 @@ def test_theory_feature_improvement(data: pd.DataFrame, feature: str, **kwargs):
             else:
                 print(f"The feature '{feature}' improves the accuracy of the model.")
 
-    return accuracies_with_feature, accuracies_without_feature
+    return accuracies_with_feature, accuracies_without_feature, p_shapiro > ALPHA
 
 
 def test_theory_contribution(differences_per_feature: List, **kwargs):
