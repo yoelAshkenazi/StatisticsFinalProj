@@ -98,9 +98,8 @@ def test_anova(results: List, normal_flags: List, **kwargs):
     :param kwargs: the keyword arguments
     :return:
     """
-    results_to_test = [results[i] for i, flag in enumerate(normal_flags) if flag]
-    print("Applying the ANOVA test on the normally distributed differences:", results_to_test)
-    sa.test_theory_contribution(results_to_test, **kwargs)
+    print("Analyzing the results using ANOVA/Kruskal-Wallis test...")
+    sa.test_theory_contribution(results, normal_flags, **kwargs)
 
 
 def check_biases(data: pd.DataFrame, features: List[str]):

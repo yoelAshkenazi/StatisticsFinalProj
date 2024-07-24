@@ -355,7 +355,7 @@ def test_theory_feature_improvement(data: pd.DataFrame, feature: str, **kwargs):
     print(f"Normality test for '{feature}' (Shapiro-Wilk):")
     print(f"p-value: {p_shapiro:.5f}", end='')
 
-    if p_shapiro > ALPHA:  # If the p-value is greater than 0.05 meaning the differences are normally distributed
+    if p_shapiro <= ALPHA:  # If the p-value is greater than 0.05 meaning the differences are not normally distributed
         print(f" The differences are normally distributed for '{feature}'.")
 
         # Perform the paired t-test
@@ -366,7 +366,7 @@ def test_theory_feature_improvement(data: pd.DataFrame, feature: str, **kwargs):
             print(f"Paired T-Test for '{feature}':")
             print(f"T-Statistic: {t_stat:.5f}")
             print(f"P-Value: {p_val:.5f}")
-            if p_val < ALPHA:
+            if p_val <= ALPHA:
                 print(f"The feature '{feature}' does not improve the accuracy of the model.")
             else:
                 print(f"The feature '{feature}' improves the accuracy of the model.")
@@ -383,7 +383,7 @@ def test_theory_feature_improvement(data: pd.DataFrame, feature: str, **kwargs):
             print(f"Wilcoxon Signed-Rank Test for '{feature}':")
             print(f"Statistic: {t_stat:.5f}")
             print(f"P-Value: {p_val:.5f}")
-            if p_val < ALPHA:  # If the p-value is less than 0.05
+            if p_val <= ALPHA:  # If the p-value is less than 0.05
                 print(f"The feature '{feature}' does not improve the accuracy of the model.")
             else:
                 print(f"The feature '{feature}' improves the accuracy of the model.")
@@ -391,10 +391,11 @@ def test_theory_feature_improvement(data: pd.DataFrame, feature: str, **kwargs):
     return accuracies_with_feature, accuracies_without_feature, p_shapiro > ALPHA
 
 
-def test_theory_contribution(differences_per_feature: List, **kwargs):
+def test_theory_contribution(differences_per_feature: List, normal_flags: List, **kwargs):
     """
     Args:
     differences_per_feature: List of lists of accuracy difference with and without the feature.
+    normal_flags: List of flags indicating if the differences are normally distributed.
     kwargs: the keyword arguments
 
     This method performs the ANOVA test to check if the differences in accuracy are significant.
@@ -408,9 +409,24 @@ def test_theory_contribution(differences_per_feature: List, **kwargs):
     print_results = kwargs.get('print_results', True)  # Get the print_results value
 
     """
-    We know that each sample is normally distributed, we need to check for equality of variances.
-    We'll use the Levene test for this.
+    If one of the feature differences is not normally distributed, we perform the Kruskal-Wallis test.
     """
+
+    if not all(normal_flags):
+        # Perform the Kruskal-Wallis test
+        stat, p_val = stats.kruskal(*differences_per_feature)
+
+        # Print the results
+        if print_results:
+            print("Kruskal-Wallis Test:")
+            print(f"Statistic: {stat:.5f}")
+            print(f"P-Value: {p_val:.5f}")
+            if p_val <= ALPHA:
+                print("The features contributed equally.")
+            else:
+                print("The features did not contribute equally.")
+
+        return
 
     # Perform the Levene test
     stat, p_val = stats.levene(*differences_per_feature)
@@ -420,7 +436,7 @@ def test_theory_contribution(differences_per_feature: List, **kwargs):
         print("Levene Test for Equality of Variances:")
         print(f"Statistic: {stat:.5f}")
         print(f"P-Value: {p_val:.5f}")
-        if p_val < ALPHA:
+        if p_val > ALPHA:
             print("The variances are not equal.")
         else:
             print("The variances are equal.")
